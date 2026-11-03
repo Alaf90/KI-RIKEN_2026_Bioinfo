@@ -1,0 +1,378 @@
+---
+title: "Task1_Luqman_SciLife2026"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+date: "2026-11-02"
+---
+R Markdown file.
+Created by: Ahmad Luqman Bin Abdul Fatah
+2026 KI-RIKEN bioinfo course
+
+```{r}
+
+#Task 1 - Literature
+
+#1. Read the research article of the hands-on working group you are assigned to.
+#2. Answer the following questions:
+
+#a. What is the medically relevant insight from the article?
+#1. The article tries to tackle the problem of heterogeneity in SLE patients. Instead of focusing on one cell types, 27 immune cell types are used in the analysis with a huge ~6k RNA-seq data analysed together. Putting these data side-by-side revealed several insights: general difference between disease activity and disease state at the transcriptomics level, different cell types show different transcriptomics depending on the disease state, BLM treatment works as the intended mechanism showing B-cell related pathways, 
+
+#b. Which genomics technology/ technologies were used?
+#Bulk RNA-seq data were generated using short-read RNA sequencing. Library was prepared using SMART-seq v4 Ultra low input RNA kit. HiSeq v4 sequencing (possibly 125bp paired-end reads)
+#For DNA sequencing, Truseq DNA PCR-free library prep kit Illumina was used for library preparation, followed by Novaseq 6000 S4 (possibly 150bp paired-end reads)
+
+#3. Further related research questions:
+#a. List and explain at least three questions/ hypotheses you can think of that extend the analysis presented in the paper.
+#1a. The analysis only focus on transcriptome based on protein-coding genes. Is there any involvement of non-coding RNAs (e.g., lncRNA, enhancer, and retrotransposons) in SLE?
+#2a. It is possible that some cell types may be modulating the microenvironment through cytokines secretion. For example, Th1 cells specifically have higher IL-21 secretion than other cell types.
+#3a. Is there a chain of events during a disease onset, where some cells may play more roles than the other?
+
+#b. [Optional] Devise a computational analysis strategy for (some of) the listed questions under 3a.
+#For non-coding RNA, STAR-aligned data can be further aligned to repetitive elements using library with RepeatMasker (e.g., Telescope), or lncRNA library.
+
+
+#install Bioconductor package
+#install.packages("BiocManager")
+#BiocManager::install(version = "3.23")
+
+#install.packages("tidyverse") #install tidyverse
+
+library(tidyverse) #run tidyverse
+
+#Task 4 - R basic operations
+
+```{r}
+#1. What is the square root of 10?
+
+sqrt(10) #3.162278
+
+#2. What is the logarithm of 32 to the base 2?
+
+log(32, 2) #5, log(number, base)
+
+#3. What is the sum of the numbers from 1 to 1000?
+
+Num <- c(1:1000) #Number denoted as Num vector
+sum(Num) #500,500
+
+#4. What is the sum of all even numbers from 2 to 1000?
+
+Even_num <- Num[Num%% 2 == 0] #Even numbers denoted as Even_num variable using modulo of division over 2 without remainder
+sum(Even_num) #250,500
+
+#5. How many pairwise comparisons are there for 100 genes?
+
+Genes <- 100 #100 total number of genes
+Pairwise_comparisons <- (Genes*(Genes-1))/2 #Assuming a unique comparison between each gene once, formula = (Total gene*(Total gene-1))/2
+Pairwise_comparisons #4950
+
+#6. And how many ways to arrange 100 genes in triples?
+
+Genes_vec <- c(1:100) #100 genes vector set as number from 1 to 100
+Triples <- t(combn(Genes_vec, 3)) #using t(combn()) to make a combination of unique triples
+nrow(Triples) #return how many rows are present, i.e., the number of unique triples, #161,700
+
+```
+
+#Task 5 - Using R example datasets
+
+```{r}
+#1. Use the R internal CO2 dataset (“data(CO2)”).
+head(CO2)
+#2. Describe briefly the content of the CO2 dataset using the help function.
+help(CO2)
+#The CO2 data frame has 84 rows and 5 columns of data from an experiment on the cold tolerance of the grass species Echinochloa crus-galli.
+#columns are made up of "Plant, Type, Treatment, conc, and uptake"
+
+#3. What is the average and median CO2 uptake of the plants from Quebec and Mississippi?
+ave_CO2_uptake <- mean(CO2$uptake) #using mean function to calculate CO2 uptake from "uptake" row
+print(ave_CO2_uptake) #27.2131
+median_CO2_uptake <- median(CO2$uptake) #using median function to calculate CO2 uptake from "uptake" row
+print(median_CO2_uptake) #28.3
+
+mean(CO2$uptake[CO2$Type == "Quebec"]) #Quebec-specific mean: 33.54286
+median(CO2$uptake[CO2$Type == "Quebec"]) #Quebec-specific median: 37.15 
+
+# Mississippi plants
+
+mean(CO2$uptake[CO2$Type == "Mississippi"]) #Mississippi-specific mean: 20.88333
+median(CO2$uptake[CO2$Type == "Mississippi"]) #Mississippi-specific median: 19.3
+
+#4. [Optional] In the “airway” example data from Bioconductor, how many genes are expressed in each sample? How many genes are not expressed in any sample?
+
+#BiocManager::install(c("airway", "DESeq2", "GenomeInfoDb")) #install  the dataset, DESeq2, and GenomeInfoDb
+
+library(airway) #load airway package
+library(DESeq2) #load DESeq2 package
+library(GenomeInfoDb) #load GenomeInfoDb package
+data("airway")
+
+
+help(airway) 
+#Read counts per gene for airway smooth muscle cell lines RNA-Seq experiment
+#data("airway") for usage, source FASTQ files from SRA, PMID: 24926665
+
+head(airway) #check airway data column and rows
+
+nrow(airway) #each row is gene names based on ENSEMBL data type (ENSG) #63677 total rows, #63676 genes (minus -1, the header)
+
+ncol(airway) # 8 column, 8 samples
+
+samples <- c(colnames(airway)) #create a vector of samples
+
+#to check how many genes are expressed, use number >0
+
+counts <- assay(airway) #assay function to check dataset
+
+Expressed_gene <- colSums(counts > 0) #consider >0 as expressed, colSums function calculate all genes with >0 value
+
+Expressed_gene #Genes Expressed per sample
+
+Unexpressed_gene <- colSums(counts == 0) #consider 0 as not expressed, colSums function calculate all genes with 0 value
+
+Unexpressed_gene #Genes not expressed per sample
+
+```
+
+
+#Task 6 - R Functions
+
+```{r}
+#1. Write a function that calculates the ratio of the mean and the median of a given vector.
+
+vector_x <- c(10, 20, 30, 40, 100) #create a vector with numbers
+
+mean_median_ratio <- function(x) {
+  mean(x) / median(x)
+}
+
+mean_median_ratio(vector_x) #check
+
+#2. Write a function that ignores the lowest and the highest value from a given vector and calculate the mean.
+
+trimmed_mean <- function(x) {
+  x <- sort(x)
+  mean(x[-c(1, length(x))])
+}
+
+trimmed_mean(vector_x) #check
+
+```
+#3. Read about piping from here:https://r4ds.had.co.nz/pipes.html#pipes (you don’t haveto learn everything, a basic understanding of the usage is enough). Write a short (max. 300 characters, no spaces) explanation of why, how, and when not to use pipes.
+
+#Answer: For new data analysis, troubleshooting, or debugging long data, writing codes with output at intervals is more suitable.
+
+#4. Familiarize yourself with the apply-family of functions (apply, lapply, sapply etc.) http://uc-r.github.io/apply_family. Write a short explanation (max. 300 characters, no spaces) of why they could be useful in your work.
+
+#Answer: The apply family is useful for analyzing large gene expression datasets. It allows for identification of missing values, and perform repeated operations across thousands of genes without writing loops.
+
+# Task 7 - Basic visualization with R
+
+#The nummenmaa-package mentioned within the examples can be installed with the code below if you wish to try some of the examples yourself.
+#install.packages("remotes")
+#install_url("http://emotion.utu.fi/wp-content/uploads/2019/11/nummenmaa_1.0.tar.gz",dependencies=TRUE)
+
+#1. Compare the distributions of the body heights of the two species from the 'magic_guys.csv' dataset graphically #I am a bit confused on what body height means, just the length?
+
+```{r}
+setwd("/Users/luqman/Postdoc/KI-RIKEN bioinfo course") #set working directory to save
+magic_guys <- read.csv("magic_guys.csv") #import dataset 'magic_guys.csv'
+head(magic_guys) #check rows and columns
+
+#a. using the basic 'hist' function as well as ‘ggplot’ and ‘geom_histogram’ functions from the ggplot2 package. Optimize the plots for example by trying several different 'breaks'. Note that ggplot2-based functions give you many more options for changing the visualization parameters, try some of them.
+
+library(ggplot2) #load ggplot2
+
+unique(magic_guys$species) #extract species names 
+setwd("/Users/luqman/Postdoc/KI-RIKEN bioinfo course") #set working directory to save
+
+#hist jedi function
+hist(
+  magic_guys[magic_guys[, 2] == "jedi", 3],
+  breaks = 6, 
+  col = "skyblue",
+  border = "white",
+  main = "jedi body Heights",
+  xlab = "Body Height",
+  ylab = "Frequency"
+)
+
+#hist  sith function
+hist(
+  magic_guys[magic_guys[, 2] == "sith", 3],
+  breaks = 5,
+  col = "salmon",
+  border = "white",
+  main = "sith Body Heights",
+  xlab = "Body Height",
+  ylab = "Frequency"
+)
+
+#ggplot2
+
+ggplot(magic_guys,
+       aes(x = .data[[names(magic_guys)[3]]],
+           fill = .data[[names(magic_guys)[2]]])) +
+  geom_histogram(
+    bins = 20, #more bins for a wider distribution
+    color = "white",
+    alpha = 0.5,
+    position = "identity"
+  ) +
+  labs(
+    title = "Body Heights: jedi vs sith",
+    x = "Body Height",
+    y = "Frequency",
+    fill = "Species"
+  ) 
+
+#b. Do the same comparison as in a. but with boxplots. If you want to use the ggplot2-package, use the functions ‘ggplot’ and ‘geom_boxplot’.
+
+ggplot(magic_guys,
+       aes(x = .data[[names(magic_guys)[2]]],
+           y = .data[[names(magic_guys)[3]]],
+           fill = .data[[names(magic_guys)[2]]])) +
+  geom_boxplot() +
+  labs(
+    title = "Body Heights: jedi vs sith",
+    x = "Species",
+    y = "Body Height"
+  )
+
+#c. Save the plots with the ‘png’, ‘pdf’, and ‘svg’ formats. In which situation would you use which file format?
+
+ggsave("boxplot_jedi_sith.pdf"); ggsave("boxplot_jedi_sith.png", dpi = 300); ggsave("boxplot_jedi_sith.svg")
+
+#Answer: png is suitable as an uneditable image since it has lower resolution, pdf is suitable for final standard figure, while svg vector image is good for further editing.
+```
+
+
+#Task 8
+
+#1. Install the Tidybiology package, which includes the data ‘chromosome’ and ‘proteins’ 
+
+remotes::install_github(
+  "hirscheylab/tidybiology",
+  dependencies = TRUE
+)
+
+#a. Extract summary statistics (mean, median and maximum) for the following variables from the ‘chromosome’ data: variations, protein coding genes, and miRNAs. Utilize the tidyverse functions to make this as simply as possible.
+
+```{r}
+library(tidyverse)
+library(tidybiology)
+
+data("chromosome")
+data("proteins")
+
+# Check the datasets
+glimpse(chromosome)
+glimpse(proteins)
+
+#use pipes for shorter lines
+chromosome %>%
+  summarise(
+    across(
+      c(variations, protein_codinggenes, mi_rna),
+      list(
+        mean = ~mean(.x, na.rm = TRUE),
+        median = ~median(.x, na.rm = TRUE),
+        max = ~max(.x, na.rm = TRUE)
+      )
+    )
+  )
+
+
+#b. How does the chromosome size distribute? Plot a graph that helps to visualize this by using ggplot2 package functions.
+
+#plot the graph
+ggplot(chromosome, aes(x = basepairs)) +
+  geom_histogram(
+    bins = 8,
+    fill = "red",
+    color = "white"
+  ) +
+  labs(
+    title = "Distribution of Human Chromosome Sizes",
+    x = "Chromosome Size (Million Base Pairs)",
+    y = "Number of Chromosomes"
+  )
+
+#Answer: Two chromosomes are longer than the rest. The rest of the chromosomes show average distribution.
+
+#c. Does the number of protein coding genes or miRNAs correlate with the length of the chromosome? Make two separate plots to visualize these relationships.
+
+#Plot1, protein coding genes vs chomosome size
+ggplot(chromosome,
+       aes(x = basepairs, y = protein_codinggenes)) +
+  geom_point(color = "steelblue", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    title = "Chromosome Size vs Protein-Coding Genes",
+    x = "Chromosome Size (Million Base Pairs)",
+    y = "Number of Protein-Coding Genes"
+  )
+
+#Plot2, miRNA vs chromosome size
+ggplot(chromosome,
+       aes(x = basepairs, y = mi_rna)) +
+  geom_point(color = "purple", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    title = "Chromosome Size vs miRNAs",
+    x = "Chromosome Size (Million Base Pairs)",
+    y = "Number of miRNAs"
+  ) 
+
+#calculate correlation coefficient
+cor(chromosome$basepairs,
+    chromosome$protein_codinggenes,
+    use = "complete.obs")
+
+cor(chromosome$basepairs,
+    chromosome$mi_rna,
+    use = "complete.obs")
+
+#Answer: both show positive correlation with chromosome size, albeit miRNA show higher correlation coeffecient.
+
+#d. Calculate the same summary statistics for the ‘proteins’ data variables length and mass. Create a meaningful visualization of the relationship between these two variables by utilizing the ggplot2 package functions. Play with the colors, theme- and other visualization parameters to create a plot that pleases you.
+
+#calculate mean, median, and maximum of length and mass
+proteins %>%
+  summarise(
+    across(
+      c(length, mass),
+      list(
+        mean = ~mean(.x, na.rm = TRUE),
+        median = ~median(.x, na.rm = TRUE),
+        max = ~max(.x, na.rm = TRUE)
+      )
+    )
+  )
+
+#Visualize on plot
+
+ggplot(proteins, aes(x = length, y = mass)) +
+  geom_point(
+    color = "darkturquoise",
+    alpha = 0.4,
+    size = 2
+  ) +
+  geom_smooth(
+    method = "lm",
+    color = "darkred",
+    se = FALSE
+  ) +
+  labs(
+    title = "Relationship Between Protein Length and Mass",
+    subtitle = "Protein length versus molecular mass",
+    x = "Protein Length",
+    y = "Protein Mass"
+  ) 
+
+#comment: In general, protein length and protein mass is proportional. There seems to be several proteins that are much longer than the others (outliers).
+```
